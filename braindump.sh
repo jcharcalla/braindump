@@ -129,7 +129,6 @@ do
 
 	# Run function that reads file via tail, exits after 1000
 	stream_capture
-	trap - INT
 
 	# Kill the data capture process so we can start it again
 	kill ${NC_OUTPUT_PID}
