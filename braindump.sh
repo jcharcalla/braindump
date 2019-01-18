@@ -7,6 +7,14 @@
 # Parses output from the ThinkGear Connect software using netcat
 # and sends to a promethues endpoint.
 
+while getopts h?f:p arg ; do
+      case $arg in
+        p) MODE="push" ;;
+        f) MODE="file" ;;
+        h|\?) print_usage; exit ;;
+      esac
+done
+
 print_usage() {
         echo "Usage: $PROGNAME "
 	no option: JSON to STDOUT
@@ -15,22 +23,7 @@ print_usage() {
        exit 1
 }
 
-break_loop() {
-	echo "$(date) - braindump: <ctrl-c> detected. exiting!"
-	# Kill the data capture process so we can start it again
-	kill ${NC_OUTPUT_PID}
 
-	exit 0	
-}
-
-
-while getopts h?f:p arg ; do
-      case $arg in
-        p) MODE="push" ;;
-        f) MODE="file" ;;
-        h|\?) print_usage; exit ;;
-      esac
-done
 
 # Raw files will rotate after # of eSense data. Approx 10 MB each.
 RAW_LINES=1000
@@ -106,6 +99,18 @@ EOF
 		fi		
 	  fi
 	done< <(exec tail -fn0 ${RAW_OUTPUT})
+}
+
+break_loop() {
+        echo "$(date) - braindump: <ctrl-c> detected. exiting!"
+        # Kill the data capture process so we can start it again
+        kill ${NC_OUTPUT_PID}
+        if [ ${MODE} == "push" ]
+        then
+          # Delete our metric group from the push gateway
+          curl -X DELETE ${PROMETHEUS_URL}
+        fi
+        exit 0
 }
 
 
